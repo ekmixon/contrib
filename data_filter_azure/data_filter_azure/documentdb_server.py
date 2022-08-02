@@ -20,9 +20,7 @@ def check_access_opa(registry_id, user_id, type, resource_name, action):
     sql = opa.splice(SELECT='permissions.id', FROM='permissions JOIN map in permissions.map', WHERE=None, decision=decision)
     print(sql)
     result = query_cosmosdb(sql, args=None, one=True)
-    if len(result) == 0:
-        return False
-    return True
+    return len(result) != 0
 
 
 @app.route('/api/registries/<registry_id>/users/<user_id>/<type>/<resource_name>/<action>', methods=["GET"])
@@ -39,17 +37,13 @@ def query_cosmosdb(query, args=[], one=False):
     cosmosdbquery = {
                 "query": query
             }
-    options = {}
-    options['enableCrossPartitionQuery'] = True
-    options['maxItemCount'] = 2
+    options = {'enableCrossPartitionQuery': True, 'maxItemCount': 2}
     client = dbinfo['client']
     container = dbinfo['container']
     result_iterable = client.QueryItems(container['_self'], cosmosdbquery, options)
-    values = []
     for item in iter(result_iterable):
         return item
-        values.append(item)
-    return values
+    return []
 
 def query_opa(registry_id, user_id, type, resourceName, action):
     input = {
@@ -64,10 +58,9 @@ def query_opa(registry_id, user_id, type, resourceName, action):
                        unknowns=['permissions'])
 
 def get_cosmosdb():
-    dbinfo = dict();
     client = cosmos_client.CosmosClient(url_connection=config.COSMOSDB_ENDPOINT, auth={
                                     'masterKey': config.COSMOSDB_PRIMARYKEY})
-    dbinfo['client'] = client
+    dbinfo = {'client': client}
     id = config.COSMOSDB_DATABASE
     databases = list(client.QueryDatabases({
             "query": "SELECT * FROM r WHERE r.id=@id",
@@ -76,24 +69,19 @@ def get_cosmosdb():
             ]
         }))
 
-    if len(databases) > 0:
-        db = databases[0]
-    else:
-        db = client.CreateDatabase({'id': id})
+    db = databases[0] if databases else client.CreateDatabase({'id': id})
     dbinfo['db'] = db
     containerid = 'permissions'
-    database_link = 'dbs/' + id
-    collections = list(client.QueryContainers(
+    database_link = f'dbs/{id}'
+    if collections := list(
+        client.QueryContainers(
             database_link,
             {
                 "query": "SELECT * FROM r WHERE r.id=@id",
-                "parameters": [
-                    { "name":"@id", "value": containerid }
-                ]
-            }
-        ))
-
-    if len(collections) > 0:
+                "parameters": [{"name": "@id", "value": containerid}],
+            },
+        )
+    ):
         container = collections[0]
     else:
         options = {

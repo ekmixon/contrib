@@ -81,8 +81,7 @@ def main(json_doc):
     }
     el_testsuites = ET.Element("testsuites")
 
-    for suite_name in test_suites:
-        suite = test_suites[suite_name]
+    for suite_name, suite in test_suites.items():
         el_testsuite = ET.Element(
             "testsuite",
             name=suite_name,
@@ -114,7 +113,7 @@ def main(json_doc):
     tree.write(sys.stdout.fileno(), encoding='utf-8', method='xml', xml_declaration=True)
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2 and (sys.argv[1] == '--help' or sys.argv[1] == 'help'):
+    if len(sys.argv) == 2 and sys.argv[1] in ['--help', 'help']:
         print(__doc__)
         sys.exit(0)
 

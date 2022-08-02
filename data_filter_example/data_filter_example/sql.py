@@ -12,7 +12,11 @@ class InnerJoin(object):
         self.expr = expr
 
     def sql(self, **kwargs):
-        return ' '.join(['INNER JOIN ' + t for t in self.tables]) + ' ON ' + self.expr.sql(**kwargs)
+        return (
+            ' '.join([f'INNER JOIN {t}' for t in self.tables])
+            + ' ON '
+            + self.expr.sql(**kwargs)
+        )
 
 
 class Where(object):
@@ -20,7 +24,7 @@ class Where(object):
         self.expr = expr
 
     def sql(self, **kwargs):
-        return 'WHERE ' + self.expr.sql(**kwargs)
+        return f'WHERE {self.expr.sql(**kwargs)}'
 
 
 class Disjunction(object):
@@ -57,9 +61,7 @@ class Column(object):
         self.name = name
 
     def sql(self, **kwargs):
-        if self.table:
-            return "%s.%s" % (self.table, self.name)
-        return str(self.name)
+        return f"{self.table}.{self.name}" if self.table else str(self.name)
 
 
 class Call(object):
@@ -68,7 +70,11 @@ class Call(object):
         self.operands = operands
 
     def sql(self, **kwargs):
-        return self.operator + '(' + ', '.join(o.sql(**kwargs) for o in self.operands) + ')'
+        return (
+            f'{self.operator}('
+            + ', '.join(o.sql(**kwargs) for o in self.operands)
+            + ')'
+        )
 
 
 class Constant(object):
@@ -76,9 +82,8 @@ class Constant(object):
         self.value = value
 
     def sql(self, **kwargs):
-        if kwargs.get('use_single_quotes', False):
-            if isinstance(self.value, str):
-                return "'" + self.value + "'"
+        if kwargs.get('use_single_quotes', False) and isinstance(self.value, str):
+            return "'" + self.value + "'"
         return json.dumps(self.value)
 
 

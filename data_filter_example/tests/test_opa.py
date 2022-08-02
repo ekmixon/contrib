@@ -317,14 +317,28 @@ multi_table_assert_cases = [
     one_table_assert_cases,
 )
 def test_compile_one_table(note, input, policy, exp_defined, exp_sql):
-    crunch('data.test.p = true', input, ['q'], 'q', policy, exp_defined, ['WHERE ' + exp_sql]
-           if exp_sql is not None else None)
+    crunch(
+        'data.test.p = true',
+        input,
+        ['q'],
+        'q',
+        policy,
+        exp_defined,
+        [f'WHERE {exp_sql}'] if exp_sql is not None else None,
+    )
 
 
 @pytest.mark.parametrize('note,input,policy,exp_defined,exp_sql', one_table_assert_cases)
 def test_compile_one_table_double_eq(note, input, policy, exp_defined, exp_sql):
-    crunch('data.test.p == true', input, ['q'], 'q', policy, exp_defined, ['WHERE ' + exp_sql]
-           if exp_sql is not None else None)
+    crunch(
+        'data.test.p == true',
+        input,
+        ['q'],
+        'q',
+        policy,
+        exp_defined,
+        [f'WHERE {exp_sql}'] if exp_sql is not None else None,
+    )
 
 
 @pytest.mark.parametrize('note,input,policy,exp_defined,exp_sql', multi_table_assert_cases)
@@ -332,10 +346,10 @@ def test_compile_multi_table(note, input, policy, exp_defined, exp_sql):
     clauses = []
     for clause in exp_sql:
         if isinstance(clause, str):
-            clauses.append('WHERE ' + clause)
+            clauses.append(f'WHERE {clause}')
         else:
-            joins = ' '.join('INNER JOIN ' + t for t in clause[0])
-            clauses.append(joins + ' ON ' + clause[1])
+            joins = ' '.join(f'INNER JOIN {t}' for t in clause[0])
+            clauses.append(f'{joins} ON {clause[1]}')
     crunch(
         'data.test.p = true',
         input,
@@ -367,10 +381,7 @@ def crunch(query, input, unknowns, from_table, policy, exp_defined, exp_sql):
         assert str(exp_defined) in str(e)
     else:
         assert result.defined == exp_defined
-        if result.defined:
-            if exp_sql is None:
-                assert result.sql is None
-            else:
-                assert [c.sql() for c in result.sql.clauses] == exp_sql
-        else:
+        if result.defined and exp_sql is None or not result.defined:
             assert result.sql is None
+        else:
+            assert [c.sql() for c in result.sql.clauses] == exp_sql

@@ -21,8 +21,9 @@ def check_access_opa(registry_id, user_id, resource_type, resource_name, action)
     if mapEntity is None:
         raise abort(404)
 
-    decision = opa_get(registry_id, user_id, mapEntity, resource_type, resource_name, action)
-    return decision
+    return opa_get(
+        registry_id, user_id, mapEntity, resource_type, resource_name, action
+    )
 
 def opa_get(registry_id, user_id, mapEntity, type, resourceName, action):
     input = {
@@ -60,7 +61,7 @@ def get_table_service():
             account_key = configuration.get('AccountKey')
             # Basic URL Configuration
             endpoint_suffix = configuration.get('EndpointSuffix')
-            if endpoint_suffix == None:
+            if endpoint_suffix is None:
                 table_endpoint  = configuration.get('TableEndpoint')
                 table_prefix = '.table.'
                 start_index = table_endpoint.find(table_prefix)

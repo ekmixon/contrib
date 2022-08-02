@@ -114,12 +114,10 @@ def logout():
 
 def make_subject():
     subject = {}
-    user = flask.request.cookies.get('user', '')
-    if user:
+    if user := flask.request.cookies.get('user', ''):
         subject['user'] = user
     for c in COOKIES:
-        v = flask.request.cookies.get(c, '')
-        if v:
+        if v := flask.request.cookies.get(c, ''):
             subject[c] = json.loads(base64.b64decode(v))
     return subject
 
@@ -178,14 +176,14 @@ def insert_object(table, cursor, obj):
     row_keys = sorted(obj.keys())
     keys = '(' + ','.join(row_keys) + ')'
     values = '(' + ','.join(['?'] * len(row_keys)) + ')'
-    stmt = 'INSERT INTO {} {} VALUES {}'.format(table, keys, values)
+    stmt = f'INSERT INTO {table} {keys} VALUES {values}'
     args = [str(obj[k]) for k in row_keys]
-    print(str(stmt), args)
+    print(stmt, args)
     cursor.execute(stmt, args)
 
 
 def make_dicts(cursor, row):
-    return dict((cursor.description[idx][0], value) for idx, value in enumerate(row))
+    return {cursor.description[idx][0]: value for idx, value in enumerate(row)}
 
 
 POSTS = [{

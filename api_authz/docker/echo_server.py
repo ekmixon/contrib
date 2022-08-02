@@ -35,7 +35,10 @@ def check_auth(url, user, method, url_as_array, token):
         return {}
     j = rsp.json()
     if rsp.status_code >= 300:
-        logging.info("Error checking auth, got status %s and message: %s" % (j.status_code, j.text))
+        logging.info(
+            f"Error checking auth, got status {j.status_code} and message: {j.text}"
+        )
+
         return {}
     logging.info("Auth response:")
     logging.info(json.dumps(j, indent=2))

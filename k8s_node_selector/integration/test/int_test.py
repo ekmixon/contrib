@@ -105,7 +105,7 @@ class TestStringMethods(unittest.TestCase):
         config.load_kube_config()
         core_v1 = core_v1_api.CoreV1Api()
 
-        unmapped_namespace = "unmapped" + str(random.randint(0, 1000))
+        unmapped_namespace = f"unmapped{random.randint(0, 1000)}"
         core_v1.create_namespace(
             client.V1Namespace(metadata=client.V1ObjectMeta(name=unmapped_namespace))
         )
@@ -128,7 +128,7 @@ class TestStringMethods(unittest.TestCase):
         self.assertIsNone(podInCluster.spec.node_selector)
 
     def create_mapped_namespace(self, core_v1):
-        mapped_namespace = "mapped" + str(random.randint(0, 1000))
+        mapped_namespace = f"mapped{random.randint(0, 1000)}"
         core_v1.create_namespace(
             client.V1Namespace(
                 metadata=client.V1ObjectMeta(
@@ -143,7 +143,7 @@ class TestStringMethods(unittest.TestCase):
         return mapped_namespace
 
     def createPodWithSpec(self, core_v1, spec, namespace="default"):
-        pod_name = "testpod" + str(random.randint(0, 1000))
+        pod_name = f"testpod{random.randint(0, 1000)}"
 
         pod_manifest = {
             "apiVersion": "v1",

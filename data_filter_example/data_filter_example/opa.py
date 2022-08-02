@@ -108,7 +108,7 @@ def compile_http(query, input, unknowns):
         }))
     body = response.json()
     if response.status_code != 200:
-        raise Exception('%s: %s' % (body.code, body.message))
+        raise Exception(f'{body.code}: {body.message}')
     return body.get('result', {}).get('queries', [])
 
 
@@ -148,7 +148,10 @@ def compile(q, input, unknowns, from_table=None, compile_func=None):
     if compile_func is None:
         compile_func = compile_http
 
-    queries = compile_func(query=q, input=input, unknowns=['data.' + u for u in unknowns])
+    queries = compile_func(
+        query=q, input=input, unknowns=[f'data.{u}' for u in unknowns]
+    )
+
 
     # Check if query is never or always defined.
     if len(queries) == 0:
@@ -167,15 +170,15 @@ def compile(q, input, unknowns, from_table=None, compile_func=None):
 def splice(SELECT, FROM, WHERE='', decision=None, sql_kwargs=None):
     """Returns a SQL query as a string constructed from the caller's provided
     values and the decision returned by compile."""
-    sql = 'SELECT ' + SELECT + ' FROM ' + FROM
+    sql = f'SELECT {SELECT} FROM {FROM}'
     if decision is not None and decision.sql is not None:
         queries = [sql] * len(decision.sql.clauses)
         for i, clause in enumerate(decision.sql.clauses):
             if sql_kwargs is None:
                 sql_kwargs = {}
-            queries[i] = queries[i] + ' ' + clause.sql(**sql_kwargs)
+            queries[i] = f'{queries[i]} {clause.sql(**sql_kwargs)}'
             if WHERE:
-                queries[i] = queries[i] + ' AND (' + WHERE + ')'
+                queries[i] = f'{queries[i]} AND ({WHERE})'
     return ' UNION '.join(queries)
 
 
@@ -213,7 +216,7 @@ class queryTranslator(object):
         walk.walk(query_set, self)
         clauses = []
         if len(self._conjunctions) > 0:
-            clauses = [sql.Where(sql.Disjunction([conj for conj in self._conjunctions]))]
+            clauses = [sql.Where(sql.Disjunction(list(self._conjunctions)))]
         for (tables, conj) in self._joins:
             pred = sql.InnerJoin(tables, conj)
             clauses.append(pred)
@@ -253,7 +256,7 @@ class queryTranslator(object):
             op = node.op()
             sql_op = sql.RelationOp(self._sql_relation_operators[op])
         except KeyError:
-            raise TranslationError('invalid expression: operator not supported: %s' % op)
+            raise TranslationError(f'invalid expression: operator not supported: {op}')
         self._operands.append([])
         for term in node.operands:
             walk.walk(term, self)
@@ -275,14 +278,16 @@ class queryTranslator(object):
                 op = v.op()
                 sql_op = self._sql_call_operators[op]
             except KeyError:
-                raise TranslationError('invalid call: operator not supported: %s' % op)
+                raise TranslationError(f'invalid call: operator not supported: {op}')
             self._operands.append([])
             for term in v.operands:
                 walk.walk(term, self)
             sql_operands = self._operands.pop()
             self._operands[-1].append(sql.Call(sql_op, sql_operands))
         else:
-            raise TranslationError('invalid term: type not supported: %s' % v.__class__.__name__)
+            raise TranslationError(
+                f'invalid term: type not supported: {v.__class__.__name__}'
+            )
 
 
 class queryPreprocessor(object):
@@ -330,7 +335,9 @@ class queryPreprocessor(object):
             # Refs must be of the form data.<table>[<iterator>].<column>.
             if not isinstance(row_id, ast.Var):
                 raise TranslationError(
-                    'invalid reference: row identifier type not supported: %s' % row_id.__class__.__name__)
+                    f'invalid reference: row identifier type not supported: {row_id.__class__.__name__}'
+                )
+
 
             prefix = node.terms[:2]
 
